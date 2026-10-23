@@ -8,14 +8,23 @@ Challenge: **[Challenge 5] Celebration & Event Planner**.
 
 The first-time organiser: a family member, friend or volunteer who has a date, a guest count and a fixed budget, but has never run an event of this size. They need decisions, not a blank checklist. They may be planning in India (where the sample data is set) or anywhere else; four currencies are supported.
 
+**Root challenge.** A generic "ask an LLM to plan my event" tool answers every request with the same confident prose. It cannot be checked, it ignores the date and the budget, and when the model is slow or wrong the user is left with nothing. Jashn instead makes the arithmetic and scheduling deterministic and visible, and uses AI only where creativity helps.
+
+**User stories**
+
+1. As a first-time organiser, I want my budget split into categories with reasons, so that I can see where the money goes and why.
+2. As someone with only three weeks left, I want a timeline that adapts to the time I have, so that I know what to do today.
+3. As a host with guests who have dietary or access needs, I want those needs to change the checklist and the questions I ask vendors, so that nothing is missed.
+4. As a user who is not sure about the AI's ideas, I want to ask for different ones, and to still get a complete plan if the AI is unavailable.
+
 ## Approach and logic
 
 The central design choice is a **deterministic planning engine with AI layered on top**, rather than asking a model to invent the whole plan.
 
-| Concern | Who decides | Why |
-| --- | --- | --- |
+| Concern                                               | Who decides                          | Why                                                                           |
+| ----------------------------------------------------- | ------------------------------------ | ----------------------------------------------------------------------------- |
 | Budget split, timeline dates, vendor list, risk flags | Pure TypeScript rules (`src/domain`) | Money and dates must be correct, repeatable, explainable and free to compute. |
-| Themes, menu ideas, activities, decor and saving tips | Gemini, with a curated fallback | Creative and personal, so a language model is the right tool. |
+| Themes, menu ideas, activities, decor and saving tips | Gemini, with a curated fallback      | Creative and personal, so a language model is the right tool.                 |
 
 ```mermaid
 flowchart LR
@@ -41,6 +50,13 @@ Every adjustment is a small, readable rule, and the reason is shown to the user.
 - **Vendors.** The checklist changes with context: no venue for a home party (rentals instead), shelter for outdoor events, a children's corner when children attend, and dietary and accessibility questions placed first for the caterer and venue. Book-by dates never fall before today.
 - **Advisories.** Short-notice, large-gathering, crowded-home, weather and local-permission flags, ordered by severity.
 
+### Trust and human control
+
+- **Explained, not asserted.** Budget lines, timeline compression and advisories each say why. Ideas say which source wrote them and why a fallback was used.
+- **Honest limits.** The empty state and the ideas section say that splits are heuristics and AI can be wrong, and to confirm prices and dietary details with vendors.
+- **The user stays in charge.** "Show different ideas" sends the themes already seen so the next round is new. The model has **no tools and no ability to act**: it returns text that is validated before it is shown.
+- **Graceful failure.** No key, timeout, upstream error, malformed reply or a tripped safety check all end in curated ideas and a plain-language reason, never an error page.
+
 ## How it works
 
 1. The user fills in the form (or loads one of three examples). The browser validates with the **same Zod schema as the server**, so rules cannot drift apart.
@@ -60,10 +76,10 @@ The app is **fully functional without an API key**: it then uses curated ideas a
 
 ### API
 
-| Route | Purpose | Success | Errors |
-| --- | --- | --- | --- |
-| `POST /api/plan` | Deterministic plan | `200 { plan }` | `403` cross-site, `413` too large, `415` content type, `422` field errors, `429` with `Retry-After` |
-| `POST /api/ideas` | Gemini or curated ideas | `200 { ideas: { source, ideas, notice? } }` | same as above |
+| Route             | Purpose                 | Success                                     | Errors                                                                                              |
+| ----------------- | ----------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `POST /api/plan`  | Deterministic plan      | `200 { plan }`                              | `403` cross-site, `413` too large, `415` content type, `422` field errors, `429` with `Retry-After` |
+| `POST /api/ideas` | Gemini or curated ideas | `200 { ideas: { source, ideas, notice? } }` | same as above                                                                                       |
 
 ## Assumptions
 
@@ -76,22 +92,23 @@ The app is **fully functional without an API key**: it then uses curated ideas a
 
 ## How this maps to the evaluation criteria
 
-| Criterion | Evidence |
-| --- | --- |
-| **Code quality** (high) | Strict TypeScript (`noUncheckedIndexedAccess`), pure domain layer with no I/O, dependency injection at every boundary (clock, limiter, AI generator), one source of truth for limits and schemas, small single-purpose modules, comments that explain why. ESLint with `jsx-a11y` runs clean. |
-| **Security** (high) | See `SECURITY.md` for the threat model. Strict input schema, body-size cap, same-origin checks, rate limits, CSP with per-request nonce, prompt-injection containment, schema-validated model output, server-only secrets, generic errors, PII-free logs, 0 known vulnerabilities in `npm audit`. |
-| **Efficiency** (medium) | Rule engine is O(n) and instant; AI is optional, runs in parallel, is bounded by a timeout, 1,500 output tokens and low thinking; no database; small client bundle with no UI framework beyond React. |
-| **Testing** (low) | 146 tests, about 99% statement coverage of the logic layers: property tests for budget invariants, boundary tests for dates, failure-path tests for every AI failure mode, handler tests through real `Request` objects, and a full-stack UI flow test. |
-| **Accessibility** (low) | Semantic landmarks and skip link, labelled controls with linked hints and errors, error summary that takes focus, focus moved to results, live status messages, native checkboxes and `details`, no colour-only meaning, reflow to 320 px, 44 px targets, reduced motion, forced colours, print styles. Colour contrast for every text pair in light and dark is **enforced by a test**, and `axe-core` runs on the UI in tests. |
-| **Problem alignment** (high) | Covers all three event types with budgets, timelines, vendor checklists and personalised ideas, and makes the "logical decision making based on user context" visible through explained adjustments and advisories. |
+| Criterion                    | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Code quality** (high)      | Strict TypeScript (`noUncheckedIndexedAccess`), pure domain layer with no I/O, dependency injection at every boundary (clock, limiter, AI generator), one source of truth for limits and schemas, small single-purpose modules, comments that explain why. ESLint with `jsx-a11y` runs clean.                                                                                                                                                                                                                                                                                                                                                                     |
+| **Security** (high)          | See `SECURITY.md` for the threat model. Strict input schema, body-size cap, same-origin checks, rate limits, CSP with per-request nonce, prompt-injection containment, schema-validated model output, server-only secrets, generic errors, PII-free logs, 0 known vulnerabilities in `npm audit`.                                                                                                                                                                                                                                                                                                                                                                 |
+| **Efficiency** (medium)      | Rule engine is O(n) and instant; AI is optional, runs in parallel, is bounded by a timeout, 1,500 output tokens and low thinking; no database; small client bundle with no UI framework beyond React.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Testing** (low)            | 146 tests, about 99% statement coverage of the logic layers: property tests for budget invariants, boundary tests for dates, failure-path tests for every AI failure mode, handler tests through real `Request` objects, and a full-stack UI flow test.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Accessibility** (low)      | Semantic landmarks and skip link, labelled controls with linked hints and errors, error summary that takes focus, focus moved to results, live status messages, native checkboxes and `details`, no colour-only meaning, reflow to 320 px, 44 px targets, reduced motion, forced colours, print styles. Screen readers get one buffered announcement per step (plan building, plan ready, ideas ready) through a live region that exists from page load. Colour contrast for every text pair in light and dark is **enforced by a test**, and `axe-core` runs on the UI in tests. These automated checks do not replace manual testing with assistive technology. |
+| **Problem alignment** (high) | Covers all three event types with budgets, timelines, vendor checklists and personalised ideas, and makes the "logical decision making based on user context" visible through explained adjustments and advisories.                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ## Project layout
 
 ```
 src/domain   pure rules: schema, budget, timeline, vendors, advisories, ideas fallback, calendar
-src/ai       prompt construction, Gemini adapter, orchestration with fallback
+src/ai       model port (interface), prompt and guardrails, Gemini adapter, orchestration with fallback
 src/server   env, HTTP guards, rate limiter, request handlers, logging
-src/app      Next.js pages, API routes, styles; src/proxy.ts sets CSP and security headers
+src/app      Next.js pages, API routes, styles
+src/proxy.ts CSP nonce and security headers (the Next.js 16 name for middleware)
 src/components, src/lib   accessible UI and client helpers
 tests        unit, property, handler, contrast and UI tests
 ```
@@ -101,3 +118,5 @@ tests        unit, property, handler, contrast and UI tests
 - The in-memory rate limiter is per instance; use a shared store for a global cap.
 - Budget splits are generic. Real quotes vary widely by city and season.
 - The Gemini call is covered by unit tests against a mocked SDK; the live call needs your API key to exercise.
+- Text is English only. Dates and money use `Intl`, so adding a language later means translating strings, not reworking logic.
+- Accessibility is checked automatically (axe-core and contrast tests). It has not been tested with a screen reader by a person.
