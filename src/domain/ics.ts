@@ -41,7 +41,10 @@ function nextDay(iso: string): string {
 
 /** Builds an all-day calendar entry for every milestone plus the event itself. */
 export function buildCalendar(plan: Plan, now: Date): string {
-  const stamp = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const stamp = now
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}/, "");
   const name = plan.summary.title || "Celebration";
   const events = [
     ...plan.timeline.milestones.map((m) => ({ uid: m.id, date: m.dueDate, summary: m.title, description: m.detail })),

@@ -24,7 +24,12 @@ export async function postJson<T>(url: string, body: unknown, signal: AbortSigna
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const error = (data as ErrorBody | null)?.error;
-    throw new ApiError(response.status, error?.code ?? "unknown", error?.message ?? "Something went wrong.", error?.fields);
+    throw new ApiError(
+      response.status,
+      error?.code ?? "unknown",
+      error?.message ?? "Something went wrong.",
+      error?.fields,
+    );
   }
   return data as T;
 }

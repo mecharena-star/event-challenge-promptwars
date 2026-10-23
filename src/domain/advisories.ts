@@ -26,7 +26,8 @@ export function deriveAdvisories(brief: EventBrief, budget: BudgetPlan, timeline
       id: "budget-comfortable",
       severity: "info",
       title: "There is room in this budget",
-      detail: "Your per-guest budget is well above our planning floor. Spend the extra on your top priorities, or grow the contingency reserve.",
+      detail:
+        "Your per-guest budget is well above our planning floor. Spend the extra on your top priorities, or grow the contingency reserve.",
     });
   }
 
@@ -35,7 +36,8 @@ export function deriveAdvisories(brief: EventBrief, budget: BudgetPlan, timeline
       id: "very-short-notice",
       severity: "critical",
       title: "The event is within a week",
-      detail: "Book venue and food first, today if you can. Expect fewer choices and higher prices, and use the first items on the timeline as your to-do list.",
+      detail:
+        "Book venue and food first, today if you can. Expect fewer choices and higher prices, and use the first items on the timeline as your to-do list.",
     });
   } else if (timeline.compressed) {
     const severe = timeline.daysAvailable < profile.maxLeadDays / 4;
@@ -84,7 +86,8 @@ export function deriveAdvisories(brief: EventBrief, budget: BudgetPlan, timeline
       id: "local-rules",
       severity: "info",
       title: "Check local rules",
-      detail: "Public gatherings often need permission, noise approval or insurance. Rules vary by place, so confirm with your local authority.",
+      detail:
+        "Public gatherings often need permission, noise approval or insurance. Rules vary by place, so confirm with your local authority.",
     });
   }
 

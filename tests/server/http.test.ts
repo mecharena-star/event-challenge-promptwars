@@ -42,7 +42,11 @@ describe("readJsonBody", () => {
   });
 
   it("rejects the wrong content type with 415", async () => {
-    const req = new Request("https://jashn.test/api/plan", { method: "POST", headers: { "content-type": "text/plain" }, body: "{}" });
+    const req = new Request("https://jashn.test/api/plan", {
+      method: "POST",
+      headers: { "content-type": "text/plain" },
+      body: "{}",
+    });
     expect(await status(readJsonBody(req))).toBe(415);
   });
 

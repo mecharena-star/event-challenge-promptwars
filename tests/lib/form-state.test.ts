@@ -9,16 +9,24 @@ const today = "2026-10-21";
 describe("validateForm", () => {
   it("reports every missing required field at once", () => {
     const result = validateForm(INITIAL_FORM, today);
-    expect("errors" in result && Object.keys(result.errors)).toEqual(expect.arrayContaining(["eventType", "eventDate", "guestCount", "budget"]));
+    expect("errors" in result && Object.keys(result.errors)).toEqual(
+      expect.arrayContaining(["eventType", "eventDate", "guestCount", "budget"]),
+    );
   });
 
   it("accepts commas and spaces in numbers, as people type them", () => {
-    expect(toBriefInput({ ...INITIAL_FORM, budget: "15,00,000", guestCount: " 1 200 " })).toMatchObject({ budget: 1_500_000, guestCount: 1200 });
+    expect(toBriefInput({ ...INITIAL_FORM, budget: "15,00,000", guestCount: " 1 200 " })).toMatchObject({
+      budget: 1_500_000,
+      guestCount: 1200,
+    });
   });
 
   it("rejects text and decimals with a plain message", () => {
     const result = validateForm({ ...sampleForm("wedding", today), guestCount: "abc", budget: "10.5" }, today);
-    expect("errors" in result && result.errors).toMatchObject({ guestCount: "Enter the number of guests", budget: "Use a whole number" });
+    expect("errors" in result && result.errors).toMatchObject({
+      guestCount: "Enter the number of guests",
+      budget: "Use a whole number",
+    });
   });
 
   it("rejects a past date using the user's own today", () => {

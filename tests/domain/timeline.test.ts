@@ -49,7 +49,10 @@ describe("buildTimeline", () => {
   });
 
   it("adds context milestones for dietary needs, accessibility and outdoor venues", () => {
-    const ids = timelineFor({ dietary: ["vegan"], needsAccessibility: true, venueType: "outdoor" }, "2027-05-10").milestones.map((m) => m.id);
+    const ids = timelineFor(
+      { dietary: ["vegan"], needsAccessibility: true, venueType: "outdoor" },
+      "2027-05-10",
+    ).milestones.map((m) => m.id);
     expect(ids).toEqual(expect.arrayContaining(["dietary", "access", "weather"]));
     expect(timelineFor({}, "2027-05-10").milestones.map((m) => m.id)).not.toContain("weather");
   });

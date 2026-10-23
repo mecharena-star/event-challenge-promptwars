@@ -22,7 +22,12 @@ export interface RateLimiterOptions {
  * per-instance guard and put a shared store (Redis, Cloud Armor) in front for
  * a global limit. See the README security section.
  */
-export function createRateLimiter({ limit, windowMs, maxKeys = 10_000, now = Date.now }: RateLimiterOptions): RateLimiter {
+export function createRateLimiter({
+  limit,
+  windowMs,
+  maxKeys = 10_000,
+  now = Date.now,
+}: RateLimiterOptions): RateLimiter {
   const hits = new Map<string, number[]>();
 
   return {

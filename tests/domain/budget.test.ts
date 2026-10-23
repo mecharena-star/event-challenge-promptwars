@@ -35,7 +35,7 @@ describe("apportion", () => {
 describe("allocateBudget invariants (randomised)", () => {
   it("never loses or invents money, whatever the brief", () => {
     const rand = seeded(42);
-    const pick = <T,>(list: readonly T[]) => list[Math.floor(rand() * list.length)] as T;
+    const pick = <T>(list: readonly T[]) => list[Math.floor(rand() * list.length)] as T;
     for (let i = 0; i < 400; i++) {
       const budget = Math.floor(rand() ** 3 * 1_000_000_000) + 1;
       const brief = makeBrief({

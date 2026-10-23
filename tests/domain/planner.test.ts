@@ -30,8 +30,12 @@ describe("advisories", () => {
 
   it("escalates as lead time shrinks", () => {
     expect(ids(plan({ eventDate: "2026-10-25" }))).toContain("very-short-notice");
-    expect(plan({ eventDate: "2026-12-15" }).advisories.find((a) => a.id === "compressed-timeline")?.severity).toBe("critical");
-    expect(plan({ eventDate: "2027-07-01" }).advisories.find((a) => a.id === "compressed-timeline")?.severity).toBe("warning");
+    expect(plan({ eventDate: "2026-12-15" }).advisories.find((a) => a.id === "compressed-timeline")?.severity).toBe(
+      "critical",
+    );
+    expect(plan({ eventDate: "2027-07-01" }).advisories.find((a) => a.id === "compressed-timeline")?.severity).toBe(
+      "warning",
+    );
     expect(ids(plan({ eventDate: "2028-01-01" }))).not.toContain("compressed-timeline");
   });
 

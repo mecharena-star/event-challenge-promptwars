@@ -24,11 +24,22 @@ export function contrast(a: string, b: string): number {
 }
 
 const TEXT_PAIRS: [string, string][] = [
-  ["ink", "bg"], ["ink", "surface"], ["muted", "bg"], ["muted", "surface"],
-  ["brand", "bg"], ["brand", "surface"], ["on-brand", "brand"],
-  ["on-accent", "accent"], ["danger", "bg"], ["danger", "surface"],
+  ["ink", "bg"],
+  ["ink", "surface"],
+  ["muted", "bg"],
+  ["muted", "surface"],
+  ["brand", "bg"],
+  ["brand", "surface"],
+  ["on-brand", "brand"],
+  ["on-accent", "accent"],
+  ["danger", "bg"],
+  ["danger", "surface"],
 ];
-const UI_PAIRS: [string, string][] = [["focus", "bg"], ["focus", "surface"], ["brand", "bg"]];
+const UI_PAIRS: [string, string][] = [
+  ["focus", "bg"],
+  ["focus", "surface"],
+  ["brand", "bg"],
+];
 
 describe.each([
   ["light", ""],

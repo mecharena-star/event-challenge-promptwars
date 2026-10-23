@@ -23,7 +23,9 @@ export function jsonResponse(body: unknown, status = 200, extra: Record<string, 
 }
 
 export function errorResponse(error: HttpError): Response {
-  const body = { error: { code: error.code, message: error.message, ...(error.fields ? { fields: error.fields } : {}) } };
+  const body = {
+    error: { code: error.code, message: error.message, ...(error.fields ? { fields: error.fields } : {}) },
+  };
   return jsonResponse(body, error.status, error.headers);
 }
 

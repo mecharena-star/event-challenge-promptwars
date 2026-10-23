@@ -88,10 +88,52 @@ export function sampleForm(type: EventType, todayIso: string): FormState {
   const at = (days: number) => addDays(todayIso, days);
   switch (type) {
     case "wedding":
-      return { ...INITIAL_FORM, eventType: "wedding", title: "Asha and Ravi's wedding", eventDate: at(200), guestCount: "250", budget: "1800000", currency: "INR", location: "Hyderabad", venueType: "outdoor", priorities: ["catering", "photography"], dietary: ["vegetarian", "jain"], needsAccessibility: true, notes: "Both families love classic Telugu film songs and want a relaxed evening reception." };
+      return {
+        ...INITIAL_FORM,
+        eventType: "wedding",
+        title: "Asha and Ravi's wedding",
+        eventDate: at(200),
+        guestCount: "250",
+        budget: "1800000",
+        currency: "INR",
+        location: "Hyderabad",
+        venueType: "outdoor",
+        priorities: ["catering", "photography"],
+        dietary: ["vegetarian", "jain"],
+        needsAccessibility: true,
+        notes: "Both families love classic Telugu film songs and want a relaxed evening reception.",
+      };
     case "birthday":
-      return { ...INITIAL_FORM, eventType: "birthday", title: "Mira's 7th birthday", eventDate: at(12), guestCount: "30", budget: "25000", currency: "INR", location: "Ongole", venueType: "home", priorities: ["entertainment"], hasChildren: true, notes: "She loves space and astronauts." };
+      return {
+        ...INITIAL_FORM,
+        eventType: "birthday",
+        title: "Mira's 7th birthday",
+        eventDate: at(12),
+        guestCount: "30",
+        budget: "25000",
+        currency: "INR",
+        location: "Ongole",
+        venueType: "home",
+        priorities: ["entertainment"],
+        hasChildren: true,
+        notes: "She loves space and astronauts.",
+      };
     case "community":
-      return { ...INITIAL_FORM, eventType: "community", title: "Ward 12 harvest fair", eventDate: at(80), guestCount: "400", budget: "150000", currency: "INR", location: "Guntur", venueType: "outdoor", priorities: ["logistics"], hasChildren: true, needsAccessibility: true, dietary: ["vegetarian"], notes: "Local self-help groups will run food and craft stalls." };
+      return {
+        ...INITIAL_FORM,
+        eventType: "community",
+        title: "Ward 12 harvest fair",
+        eventDate: at(80),
+        guestCount: "400",
+        budget: "150000",
+        currency: "INR",
+        location: "Guntur",
+        venueType: "outdoor",
+        priorities: ["logistics"],
+        hasChildren: true,
+        needsAccessibility: true,
+        dietary: ["vegetarian"],
+        notes: "Local self-help groups will run food and craft stalls.",
+      };
   }
 }
