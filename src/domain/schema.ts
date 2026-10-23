@@ -25,9 +25,7 @@ export type DietaryNeed = (typeof DIETARY_NEEDS)[number];
 export type PriorityCategory = Exclude<BudgetCategory, "contingency">;
 
 /** Categories a user may mark as a priority. The contingency reserve is never a priority. */
-export const PRIORITY_CATEGORIES = BUDGET_CATEGORIES.filter(
-  (c): c is PriorityCategory => c !== "contingency",
-);
+export const PRIORITY_CATEGORIES = BUDGET_CATEGORIES.filter((c): c is PriorityCategory => c !== "contingency");
 
 /** Hard limits live here once, so the form, the API and the tests can never drift apart. */
 export const LIMITS = {
@@ -72,7 +70,12 @@ export const briefSchema = z.strictObject({
 export type EventBrief = z.output<typeof briefSchema>;
 export type EventBriefInput = z.input<typeof briefSchema>;
 
-const idea = (max: number) => z.string().trim().min(2).max(max);
+/** Length caps for model-written text. Also quoted to the model in its instructions. */
+export const IDEA_LIMITS = { name: 60, description: 220, whyItFits: 160, item: 140 } as const;
+
+/** Model output is rendered as plain text, but we still refuse anything that looks like markup. */
+const noMarkup = (text: string) => !/[<>]/.test(text) && !/javascript:/i.test(text);
+const idea = (max: number) => z.string().trim().min(2).max(max).refine(noMarkup, "Markup is not allowed");
 
 /**
  * Shape of the AI-written ideas. The same schema constrains Gemini's output
@@ -81,12 +84,24 @@ const idea = (max: number) => z.string().trim().min(2).max(max);
  */
 export const ideasSchema = z.object({
   themes: z
-    .array(z.object({ name: idea(60), description: idea(220), whyItFits: idea(160) }))
+    .array(
+      z.object({
+        name: idea(IDEA_LIMITS.name),
+        description: idea(IDEA_LIMITS.description),
+        whyItFits: idea(IDEA_LIMITS.whyItFits),
+      }),
+    )
     .min(2)
     .max(3),
-  menuIdeas: z.array(idea(140)).min(3).max(5),
-  activities: z.array(idea(140)).min(3).max(5),
-  decorTips: z.array(idea(140)).min(2).max(4),
-  savingTips: z.array(idea(140)).min(2).max(4),
+  menuIdeas: z.array(idea(IDEA_LIMITS.item)).min(3).max(5),
+  activities: z.array(idea(IDEA_LIMITS.item)).min(3).max(5),
+  decorTips: z.array(idea(IDEA_LIMITS.item)).min(2).max(4),
+  savingTips: z.array(idea(IDEA_LIMITS.item)).min(2).max(4),
 });
 export type Ideas = z.infer<typeof ideasSchema>;
+
+/** The ideas endpoint takes the brief plus the themes the user has already seen, so "show different ideas" works. */
+export const ideasRequestSchema = briefSchema.extend({
+  avoidThemes: z.array(z.string().trim().min(1).max(IDEA_LIMITS.name)).max(6).default([]),
+});
+export type IdeasRequest = z.output<typeof ideasRequestSchema>;

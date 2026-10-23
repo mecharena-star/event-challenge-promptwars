@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { checkEventDate, epochDay, isoFromEpochDay, todayEpochDay } from "@/domain/dates";
 import { fieldErrors } from "@/domain/field-errors";
-import { briefSchema, ideasSchema } from "@/domain/schema";
+import { briefSchema, ideasRequestSchema, ideasSchema } from "@/domain/schema";
 import { formatMoney } from "@/domain/money";
 import { curatedIdeas } from "@/domain/ideas-fallback";
 import { makeBrief, NOW } from "../helpers";
@@ -11,7 +11,14 @@ const valid = { eventType: "wedding", eventDate: "2027-01-01", guestCount: 100, 
 describe("briefSchema", () => {
   it("applies defaults for optional fields", () => {
     const brief = briefSchema.parse(valid);
-    expect(brief).toMatchObject({ title: "", venueType: "undecided", priorities: [], dietary: [], hasChildren: false, notes: "" });
+    expect(brief).toMatchObject({
+      title: "",
+      venueType: "undecided",
+      priorities: [],
+      dietary: [],
+      hasChildren: false,
+      notes: "",
+    });
   });
 
   it.each([
@@ -44,7 +51,10 @@ describe("briefSchema", () => {
 describe("ideasSchema", () => {
   it("accepts the curated bank for every event type, so the fallback is always valid", () => {
     for (const eventType of ["wedding", "birthday", "community"] as const) {
-      const ideas = curatedIdeas(makeBrief({ eventType, dietary: ["vegan"], hasChildren: true, venueType: "outdoor" }), "tight");
+      const ideas = curatedIdeas(
+        makeBrief({ eventType, dietary: ["vegan"], hasChildren: true, venueType: "outdoor" }),
+        "tight",
+      );
       expect(ideasSchema.safeParse(ideas).success).toBe(true);
     }
   });
@@ -53,6 +63,28 @@ describe("ideasSchema", () => {
     const ideas = curatedIdeas(makeBrief(), "balanced");
     expect(ideasSchema.safeParse({ ...ideas, menuIdeas: ["x".repeat(500), "a", "b"] }).success).toBe(false);
     expect(ideasSchema.safeParse({ ...ideas, themes: [] }).success).toBe(false);
+  });
+});
+
+describe("ideasSchema markup guard", () => {
+  const ideas = curatedIdeas(makeBrief(), "balanced");
+
+  it.each(["<b>bold</b> idea", "a > b", "see javascript:alert(1)", "JAVASCRIPT:void(0)"])("rejects %j", (text) => {
+    expect(ideasSchema.safeParse({ ...ideas, savingTips: [text, "fine tip"] }).success).toBe(false);
+  });
+});
+
+describe("ideasRequestSchema", () => {
+  const base = { eventType: "wedding", eventDate: "2027-01-01", guestCount: 100, budget: 500000, currency: "INR" };
+
+  it("defaults to no avoided themes and caps the list", () => {
+    expect(ideasRequestSchema.parse(base).avoidThemes).toEqual([]);
+    expect(ideasRequestSchema.safeParse({ ...base, avoidThemes: Array(7).fill("x") }).success).toBe(false);
+    expect(ideasRequestSchema.safeParse({ ...base, avoidThemes: ["x".repeat(61)] }).success).toBe(false);
+  });
+
+  it("stays strict about every other field", () => {
+    expect(ideasRequestSchema.safeParse({ ...base, admin: true }).success).toBe(false);
   });
 });
 

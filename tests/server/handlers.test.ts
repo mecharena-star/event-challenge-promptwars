@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { IdeaGenerator } from "@/ai/port";
 import { curatedIdeas } from "@/domain/ideas-fallback";
 import { createIdeasHandler, createPlanHandler, type Deps } from "@/server/handlers";
 import { loadEnv } from "@/server/env";
@@ -67,7 +68,13 @@ describe("POST /api/plan", () => {
       logged.push(String(chunk));
       return true;
     });
-    const broken = createPlanHandler(makeDeps({ now: () => { throw new Error("db password is hunter2"); } }));
+    const broken = createPlanHandler(
+      makeDeps({
+        now: () => {
+          throw new Error("db password is hunter2");
+        },
+      }),
+    );
     const response = await broken(jsonRequest(body));
     const text = await response.text();
     write.mockRestore();
@@ -101,5 +108,52 @@ describe("POST /api/ideas", () => {
     const handler = createIdeasHandler(makeDeps({ ideasLimiter: createRateLimiter({ limit: 1, windowMs: 60_000 }) }));
     await handler(jsonRequest(body));
     expect((await handler(jsonRequest(body))).status).toBe(429);
+  });
+
+  it("accepts already-seen themes, and /api/plan does not", async () => {
+    const withAvoid = { ...body, avoidThemes: ["Golden hour garden"] };
+    const ideas = await createIdeasHandler(makeDeps())(jsonRequest(withAvoid));
+    const names = (await ideas.json()).ideas.ideas.themes.map((t: { name: string }) => t.name);
+    expect(names).not.toContain("Golden hour garden");
+
+    const plan = await createPlanHandler(makeDeps())(jsonRequest(withAvoid));
+    expect(plan.status).toBe(422);
+  });
+
+  it("rejects an oversized avoid list", async () => {
+    const response = await createIdeasHandler(makeDeps())(jsonRequest({ ...body, avoidThemes: Array(7).fill("x") }));
+    expect(response.status).toBe(422);
+  });
+
+  it("stops the model call when the browser disconnects", async () => {
+    let seen: AbortSignal | undefined;
+    const generator: IdeaGenerator = (_request, signal) => {
+      seen = signal;
+      return new Promise((_resolve, reject) => signal.addEventListener("abort", () => reject(new Error("aborted"))));
+    };
+    const browser = new AbortController();
+    const request = new Request("https://jashn.test/api/ideas", {
+      method: "POST",
+      headers: { "content-type": "application/json", host: "jashn.test" },
+      body: JSON.stringify(body),
+      signal: browser.signal,
+    });
+    const pending = createIdeasHandler(makeDeps({ generator }))(request);
+    await vi.waitFor(() => expect(seen).toBeDefined());
+    browser.abort();
+    expect((await pending).status).toBe(200);
+    expect(seen?.aborted).toBe(true);
+  });
+
+  it("logs why ideas were degraded, without any user text", async () => {
+    const logged: string[] = [];
+    const write = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      logged.push(String(chunk));
+      return true;
+    });
+    await createIdeasHandler(makeDeps())(jsonRequest({ ...body, notes: "secret wedding plans" }));
+    write.mockRestore();
+    expect(logged.join("")).toContain('"event":"ideas_degraded","notice":"not_configured"');
+    expect(logged.join("")).not.toContain("secret wedding plans");
   });
 });

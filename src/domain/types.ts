@@ -73,11 +73,19 @@ export interface Plan {
   advisories: Advisory[];
 }
 
-export type IdeasNotice = "not_configured" | "timeout" | "invalid_response" | "upstream_error";
+export type IdeasNotice =
+  | "not_configured"
+  | "timeout"
+  | "invalid_response"
+  | "upstream_error"
+  /** The reply tripped the prompt-injection tripwire and was discarded. */
+  | "blocked_output"
+  /** Gemini was used, but the user's notes were left out because they looked like instructions. */
+  | "notes_ignored";
 
 export interface IdeasResult {
   source: "gemini" | "curated";
   ideas: Ideas;
-  /** Why curated ideas were used instead of Gemini, when that happened. */
+  /** Why curated ideas were used instead of Gemini, or what was held back from Gemini. */
   notice?: IdeasNotice;
 }

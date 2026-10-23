@@ -1,8 +1,9 @@
 import { generateIdeas } from "@/ai/ideas";
-import type { IdeaGenerator } from "@/ai/gemini";
+import type { IdeaGenerator } from "@/ai/port";
 import { checkEventDate, todayEpochDay } from "@/domain/dates";
 import { buildPlan } from "@/domain/planner";
-import { briefSchema, type EventBrief } from "@/domain/schema";
+import { briefSchema, ideasRequestSchema } from "@/domain/schema";
+import type { ZodSafeParseResult } from "zod";
 import type { ServerEnv } from "./env";
 import { fieldErrors } from "@/domain/field-errors";
 import { clientKey, errorResponse, HttpError, isSameOrigin, jsonResponse, readJsonBody } from "./http";
@@ -22,7 +23,12 @@ export interface Deps {
  * bounded body, schema validation, then date feasibility. Cheap checks run
  * first so abusive requests cost as little as possible.
  */
-async function readBrief(req: Request, limiter: RateLimiter, now: Date): Promise<EventBrief> {
+async function readInput<T extends { eventDate: string }>(
+  req: Request,
+  limiter: RateLimiter,
+  now: Date,
+  validate: (data: unknown) => ZodSafeParseResult<T>,
+): Promise<T> {
   if (!isSameOrigin(req)) throw new HttpError(403, "forbidden_origin", "Cross-site requests are not allowed.");
 
   const verdict = limiter.check(clientKey(req));
@@ -32,7 +38,7 @@ async function readBrief(req: Request, limiter: RateLimiter, now: Date): Promise
     });
   }
 
-  const parsed = briefSchema.safeParse(await readJsonBody(req));
+  const parsed = validate(await readJsonBody(req));
   if (!parsed.success) {
     throw new HttpError(422, "invalid_brief", "Some details need fixing.", fieldErrors(parsed.error));
   }
@@ -62,7 +68,7 @@ export function createPlanHandler(deps: Deps) {
   return (req: Request) =>
     respond(async () => {
       const now = deps.now();
-      const brief = await readBrief(req, deps.planLimiter, now);
+      const brief = await readInput(req, deps.planLimiter, now, (data) => briefSchema.safeParse(data));
       return { plan: buildPlan(brief, now) };
     }, "plan");
 }
@@ -72,8 +78,16 @@ export function createIdeasHandler(deps: Deps) {
   return (req: Request) =>
     respond(async () => {
       const now = deps.now();
-      const brief = await readBrief(req, deps.ideasLimiter, now);
+      const { avoidThemes, ...brief } = await readInput(req, deps.ideasLimiter, now, (data) =>
+        ideasRequestSchema.safeParse(data),
+      );
       const plan = buildPlan(brief, now);
-      return { ideas: await generateIdeas(brief, plan, deps.generator, { timeoutMs: deps.env.AI_TIMEOUT_MS }) };
+      const ideas = await generateIdeas(brief, plan, deps.generator, {
+        timeoutMs: deps.env.AI_TIMEOUT_MS,
+        signal: req.signal,
+        avoidThemes,
+      });
+      if (ideas.notice) log("warn", "ideas_degraded", { notice: ideas.notice });
+      return { ideas };
     }, "ideas");
 }
