@@ -14,7 +14,9 @@ export default defineConfig({
     include: ["tests/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      include: ["src/domain/**", "src/ai/**", "src/server/**", "src/lib/**"],
+      include: ["src/domain/**", "src/ai/**", "src/server/**", "src/lib/**", "src/proxy.ts"],
+      // Type-only modules have no runtime code to cover.
+      exclude: ["src/domain/types.ts", "src/ai/port.ts"],
       thresholds: { statements: 90, branches: 80, functions: 90, lines: 90 },
     },
   },
