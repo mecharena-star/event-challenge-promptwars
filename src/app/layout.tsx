@@ -5,7 +5,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Jashn: plan a wedding, birthday or community event",
-  description: "A planning assistant that turns your event details into a budget, a dated timeline, a vendor checklist and ideas.",
+  description:
+    "A planning assistant that turns your event details into a budget, a dated timeline, a vendor checklist and ideas.",
 };
 
 export const viewport: Viewport = {

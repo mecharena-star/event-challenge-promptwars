@@ -13,9 +13,10 @@ interface PlanViewProps {
   headingRef: Ref<HTMLHeadingElement>;
   onDownloadCalendar: () => void;
   onPrint: () => void;
+  onMoreIdeas: () => void;
 }
 
-export function PlanView({ plan, ideas, headingRef, onDownloadCalendar, onPrint }: PlanViewProps) {
+export function PlanView({ plan, ideas, headingRef, onDownloadCalendar, onPrint, onMoreIdeas }: PlanViewProps) {
   const { summary } = plan;
   return (
     <article aria-labelledby="plan-title" className="plan">
@@ -42,7 +43,7 @@ export function PlanView({ plan, ideas, headingRef, onDownloadCalendar, onPrint 
       <BudgetSection budget={plan.budget} />
       <TimelineSection timeline={plan.timeline} />
       <VendorSection vendors={plan.vendors} />
-      <IdeasSection state={ideas} />
+      <IdeasSection state={ideas} onMore={onMoreIdeas} />
     </article>
   );
 }

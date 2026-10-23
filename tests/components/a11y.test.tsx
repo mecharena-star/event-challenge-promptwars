@@ -20,7 +20,10 @@ function installFetch(now: Date) {
   const plan = createPlanHandler(deps);
   const ideas = createIdeasHandler(deps);
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
-    const request = new Request(`https://jashn.test${url}`, { ...init, headers: { ...init.headers, host: "jashn.test" } });
+    const request = new Request(`https://jashn.test${url}`, {
+      ...init,
+      headers: { ...init.headers, host: "jashn.test" },
+    });
     return url === "/api/plan" ? plan(request) : ideas(request);
   });
 }
@@ -80,5 +83,32 @@ describe("PlanApp accessibility and flow", () => {
     await screen.findByText(/0 of \d+ booked/);
     fireEvent.click(screen.getAllByRole("checkbox", { name: /Venue or open space/ })[0] as HTMLElement);
     expect(screen.getByText(/1 of \d+ booked/)).toBeInTheDocument();
+  });
+
+  it("offers different ideas on request, keeps focus on the button, and announces the result", async () => {
+    const { container } = render(<PlanApp />);
+    fireEvent.click(screen.getByRole("button", { name: "Birthday" }));
+    fireEvent.click(screen.getByRole("button", { name: "Build my plan" }));
+    await screen.findByText(/curated ideas matched to your brief/);
+    const firstThemes = [...container.querySelectorAll(".theme-name")].map((n) => n.textContent);
+
+    const more = screen.getByRole("button", { name: "Show different ideas" });
+    more.focus();
+    fireEvent.click(more);
+    await screen.findByText("New ideas are ready");
+    await waitFor(() => {
+      const next = [...container.querySelectorAll(".theme-name")].map((n) => n.textContent);
+      expect(next.length).toBeGreaterThan(0);
+      expect(next.some((name) => firstThemes.includes(name))).toBe(false);
+    });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Show different ideas" }));
+    expect(await violations(container)).toEqual([]);
+  });
+
+  it("explains how the planner works and its limits before the first plan", () => {
+    render(<PlanApp />);
+    fireEvent.click(screen.getByText("How this planner works, and what it cannot do"));
+    expect(screen.getByText(/AI can be wrong|It can be wrong/)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing you enter is stored/)).toBeInTheDocument();
   });
 });

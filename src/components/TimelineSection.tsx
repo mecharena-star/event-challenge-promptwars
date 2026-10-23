@@ -7,7 +7,8 @@ export function TimelineSection({ timeline }: { timeline: TimelinePlan }) {
       <h3 id="timeline-title">Your timeline</h3>
       {timeline.compressed && (
         <p className="lede">
-          With {timeline.daysAvailable} days to go, we compressed the usual lead time. Steps are ordered by when to do them.
+          With {timeline.daysAvailable} days to go, we compressed the usual lead time. Steps are ordered by when to do
+          them.
         </p>
       )}
       <ol className="timeline">
